@@ -11,7 +11,7 @@ export class PipelineCdkStack extends Stack {
     });
 
     new CfnOutput(this, 'CodeCommitRepoUrl', {
-      value: codeCommitRepo.repositoryCloneUrlHttp
+      value: codeCommitRepo.repositoryCloneUrlGrc,
     });
   }
 }
