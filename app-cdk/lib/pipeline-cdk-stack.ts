@@ -7,7 +7,7 @@ export class PipelineCdkStack extends Stack {
     super(scope, id, props);
 
     const codeCommitRepo= new codecommit.Repository(this, 'CodeCommitRepo', {
-      repositoryName: 'chatbot-repo',
+      repositoryName: 'chatbot',
     });
 
     new CfnOutput(this, 'CodeCommitRepoUrl', {
