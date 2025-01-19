@@ -9,7 +9,7 @@ phases:
       - aws ecr get-login-password --region $AWS_DEFAULT_REGION | docker login --username AWS --password-stdin $IMAGE_REPO_URI
   build:
     commands:
-      - cd ./chatbot-app
+      - cd ./app-chatbot
       - docker build -t chatbot:$IMAGE_TAG .
       - docker tag chatbot:$IMAGE_TAG $IMAGE_REPO_URI:$IMAGE_TAG
   post_build:
