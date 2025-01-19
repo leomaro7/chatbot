@@ -1,0 +1,17 @@
+version: 0.2
+
+phases:
+  install:
+    runtime-versions:
+      python: 3.11
+  pre_build:
+    commands:
+      - aws ecr get-login-password --region $AWS_DEFAULT_REGION | docker login --username AWS --password-stdin $IMAGE_REPO_URI
+  build:
+    commands:
+      - cd ./chatbot-app
+      - docker build -t chatbot:$IMAGE_TAG .
+      - docker tag chatbot:$IMAGE_TAG $IMAGE_REPO_URI:$IMAGE_TAG
+  post_build:
+    commands:
+      - docker push $IMAGE_REPO_URI:$IMAGE_TAG
