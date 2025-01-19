@@ -6,6 +6,7 @@ import * as codebuild from "aws-cdk-lib/aws-codebuild";
 import * as codepipeline_actions from 'aws-cdk-lib/aws-codepipeline-actions';
 import * as ecr from 'aws-cdk-lib/aws-ecr';
 import * as iam from 'aws-cdk-lib/aws-iam';
+// import * as ecsPatterns from 'aws-cdk-lib/aws-ecs-patterns';
 
 interface ConsumerProps extends StackProps {
     ecrRepo: ecr.Repository;
