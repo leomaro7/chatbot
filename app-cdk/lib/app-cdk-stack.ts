@@ -29,7 +29,7 @@ export class AppCdkStack extends Stack {
         publicLoadBalancer: true,
         memoryLimitMiB: 1024,
         cpu: 512,
-        desiredCount: 1,
+        desiredCount: 0,
         taskImageOptions: {
           image: ecs.ContainerImage.fromEcrRepository(props.ecrRepo),
           containerName: 'app-streamlit',
