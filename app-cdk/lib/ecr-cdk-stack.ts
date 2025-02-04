@@ -8,7 +8,15 @@ export class EcrCdkStack extends Stack {
     constructor(scope: Construct, id: string, props: StackProps) {
         super(scope, id, props);
 
-    this.ecrRepo = new ecr.Repository(this, "EcrRepo");
+    this.ecrRepo = new ecr.Repository(this, "EcrRepo",
+        {
+            repositoryName: "chatbot",
+        }
+    );
+
+    this.ecrRepo.addLifecycleRule({
+        maxImageCount: 5
+    });
 
     }
 }

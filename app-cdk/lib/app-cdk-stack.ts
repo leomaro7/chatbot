@@ -15,7 +15,12 @@ export class AppCdkStack extends Stack {
   constructor(scope: Construct, id: string, props: ConsumerProps) {
     super(scope, `${id}-app-stack`, props);
 
-    const vpc = new ec2.Vpc(this, `${id}Vpc`);
+    const vpc = new ec2.Vpc(this, `${id}Vpc`
+      , {
+        maxAzs: 2,
+        natGateways: 0,
+      }
+    );
 
     const ecsCluster = new ecs.Cluster(this, `${id}EcsCluster`, {
       vpc: vpc,
@@ -29,7 +34,7 @@ export class AppCdkStack extends Stack {
         publicLoadBalancer: true,
         memoryLimitMiB: 1024,
         cpu: 512,
-        desiredCount: 0,
+        desiredCount: 1,
         taskImageOptions: {
           image: ecs.ContainerImage.fromEcrRepository(props.ecrRepo),
           containerName: 'app-streamlit',

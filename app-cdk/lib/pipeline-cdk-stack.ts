@@ -18,58 +18,55 @@ export class PipelineCdkStack extends Stack {
         super(scope, id, props);
  
     const codeCommitRepo= new codecommit.Repository(this, 'CodeCommitRepo', {
-      repositoryName: 'chatbot',
+        repositoryName: 'chatbot',
     });
 
     const codePipeline = new codepipeline.Pipeline(this, "CodePipeline", {
-        pipelineName: "Chatbot_Pipeline",
+        pipelineName: "chatbot-pipeline",
         crossAccountKeys: false,
-      });
+    });
 
-    const codeBuildQuality = new codebuild.PipelineProject(
-    this,
-    "CodeBuildQuality",
-    {
+    const codeBuildUnitTest = new codebuild.PipelineProject(this,"CodeBuildUnitTest", {
         environment: {
         buildImage: codebuild.LinuxBuildImage.AMAZON_LINUX_2023_5,
         privileged: true,
         computeType: codebuild.ComputeType.LARGE
         },
-        buildSpec: codebuild.BuildSpec.fromSourceFilename('buildspec_test.yml')
-    }
-    );
+        buildSpec: codebuild.BuildSpec.fromSourceFilename('buildspec_test.yml'),
+    });
 
     const codeBuildDocker = new codebuild.PipelineProject(this, 'CodeBuildDocker', {
         environmentVariables: {
-          'IMAGE_TAG': { value: 'latest' },
-          'IMAGE_REPO_URI': {value: props.ecrRepo.repositoryUri },
-          'AWS_DEFAULT_REGION': {value: process.env.CDK_DEFAULT_REGION },
+            'IMAGE_TAG': { value: 'latest' },
+            'IMAGE_REPO_URI': {value: props.ecrRepo.repositoryUri },
+            'AWS_DEFAULT_REGION': {value: process.env.CDK_DEFAULT_REGION },
         },
         environment: {
-          buildImage: codebuild.LinuxBuildImage.AMAZON_LINUX_2023_5,
-          privileged: true,
-          computeType: codebuild.ComputeType.LARGE
-          },
+            buildImage: codebuild.LinuxBuildImage.AMAZON_LINUX_2023_5,
+            privileged: true,
+            computeType: codebuild.ComputeType.LARGE
+        },
         buildSpec: codebuild.BuildSpec.fromSourceFilename('buildspec_docker.yml'),
-      });
+        cache: codebuild.Cache.local(codebuild.LocalCacheMode.DOCKER_LAYER, codebuild.LocalCacheMode.CUSTOM),
+    });
 
     const codeBuildRolePolicyDocker =  new iam.PolicyStatement({
-    effect: iam.Effect.ALLOW,
-    resources: ['*'],
-    actions: [
-        'ecr:GetAuthorizationToken',
-        'ecr:BatchCheckLayerAvailability',
-        'ecr:GetDownloadUrlForLayer',
-        'ecr:GetRepositoryPolicy',
-        'ecr:DescribeRepositories',
-        'ecr:ListImages',
-        'ecr:DescribeImages',
-        'ecr:BatchGetImage',
-        'ecr:InitiateLayerUpload',
-        'ecr:UploadLayerPart',
-        'ecr:CompleteLayerUpload',
-        'ecr:PutImage'
-    ]
+        effect: iam.Effect.ALLOW,
+        resources: ['*'],
+        actions: [
+            'ecr:GetAuthorizationToken',
+            'ecr:BatchCheckLayerAvailability',
+            'ecr:GetDownloadUrlForLayer',
+            'ecr:GetRepositoryPolicy',
+            'ecr:DescribeRepositories',
+            'ecr:ListImages',
+            'ecr:DescribeImages',
+            'ecr:BatchGetImage',
+            'ecr:InitiateLayerUpload',
+            'ecr:UploadLayerPart',
+            'ecr:CompleteLayerUpload',
+            'ecr:PutImage'
+        ]
     });
     
     codeBuildDocker.addToRolePolicy(codeBuildRolePolicyDocker);
@@ -79,54 +76,55 @@ export class PipelineCdkStack extends Stack {
     const codeBuildDockerOutput = new codepipeline.Artifact();
 
     codePipeline.addStage({
-      stageName: "Source",
-      actions: [
-        new codepipeline_actions.CodeCommitSourceAction({
-          actionName: "CodeCommit",
-          repository: codeCommitRepo,
-          output: sourceOutput,
-          branch: "main",
-        }),
-      ],
-    });
-
-    codePipeline.addStage({
-      stageName: "CodeBuildQualityQuality",
-      actions: [
-        new codepipeline_actions.CodeBuildAction({
-          actionName: "Unit-Test",
-          project: codeBuildQuality,
-          input: sourceOutput,
-          outputs: [unitTestOutput],
-        }),
-      ],
-    });
-
-    codePipeline.addStage({
-        stageName: 'Docker-Push-ECR',
+        stageName: "Source",
         actions: [
-          new codepipeline_actions.CodeBuildAction({
-            actionName: 'docker-build',
-            project: codeBuildDocker,
-            input: sourceOutput,
-            outputs: [codeBuildDockerOutput],
-          }),
+            new codepipeline_actions.CodeCommitSourceAction({
+                actionName: "CodeCommit",
+                repository: codeCommitRepo,
+                output: sourceOutput,
+                branch: "main",
+            }),
         ],
-      });
+    });
 
-      codePipeline.addStage({
-        stageName: 'Deploy-Test',
+    codePipeline.addStage({
+        stageName: "CodeBuildUnitTest",
         actions: [
-          new codepipeline_actions.EcsDeployAction({
-            actionName: 'Deploy-Fargate-Test',
+            new codepipeline_actions.CodeBuildAction({
+                actionName: "UnitTest",
+                project: codeBuildUnitTest,
+                input: sourceOutput,
+                outputs: [unitTestOutput],
+             }),
+        ],
+    });
+
+    codePipeline.addStage({
+        stageName: 'CodeBuildDocker',
+        actions: [
+            new codepipeline_actions.CodeBuildAction({
+                actionName: 'BuildDocker',
+                project: codeBuildDocker,
+                input: sourceOutput,
+                outputs: [codeBuildDockerOutput],
+            }),
+        ],
+    });
+
+    codePipeline.addStage({
+        stageName: 'DeployTest',
+        actions: [
+            new codepipeline_actions.EcsDeployAction({
+            actionName: 'DeployAlbFargateTest',
             service: props.albFargateServiceTest.service,
             input: codeBuildDockerOutput,
-          }),
+            }),
         ]
-      });
+    });
       
     new CfnOutput(this, 'CodeCommitRepoUrl', {
-      value: codeCommitRepo.repositoryCloneUrlGrc,
+        value: codeCommitRepo.repositoryCloneUrlGrc,
     });
+
   }
 }

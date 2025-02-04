@@ -15,7 +15,7 @@ phases:
   post_build:
     commands:
       - docker push $IMAGE_REPO_URI:$IMAGE_TAG
-      - printf '[{"name":"app-chatbot","imageUri":"%s"}]' $IMAGE_REPO_URI:$IMAGE_TAG > $CODEBUILD_SRC_DIR/imagedefinitions.json
+      - printf '[{"name":"app-streamlit","imageUri":"%s"}]' $IMAGE_REPO_URI:$IMAGE_TAG > $CODEBUILD_SRC_DIR/imagedefinitions.json
 
 artifacts:
     files: imagedefinitions.json
